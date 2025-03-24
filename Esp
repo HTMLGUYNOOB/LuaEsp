@@ -1,7 +1,16 @@
 local Players = game:GetService("Players")
-local Camera = game:GetService("Workspace").CurrentCamera
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
--- Function to add highlight effect
+-- Create a RemoteEvent for communication (Server to Client)
+local aimEvent = Instance.new("RemoteEvent")
+aimEvent.Name = "AimbotEvent"
+aimEvent.Parent = ReplicatedStorage
+
+-- Target player username
+local targetUsername = "HelloGuysscript"
+
+-- Function to add highlight effect (ESP)
 local function addHighlight(character)
     if character and not character:FindFirstChild("Highlight") then
         local highlight = Instance.new("Highlight")
@@ -13,71 +22,74 @@ local function addHighlight(character)
     end
 end
 
--- Function to handle player joining
-local function onPlayerAdded(player)
-    -- Apply highlight when character loads
-    player.CharacterAdded:Connect(function(character)
-        addHighlight(character)
-    end)
-
-    -- If player already has a character, apply immediately
-    if player.Character then
-        addHighlight(player.Character)
+-- Function to increase walk speed
+local function increaseWalkSpeed(character)
+    local humanoid = character:FindFirstChild("Humanoid")
+    if humanoid then
+        -- Set WalkSpeed to 23 (increased speed)
+        humanoid.WalkSpeed = 23
     end
 end
 
--- Function to get nearest player
+-- Function to handle player joining and applying ESP and WalkSpeed
+local function onPlayerAdded(player)
+    -- Only apply to the target player "HelloGuysscript"
+    if player.Name == targetUsername then
+        player.CharacterAdded:Connect(function(character)
+            -- Apply highlight when character loads
+            addHighlight(character)
+
+            -- Increase WalkSpeed to 23 when character loads
+            increaseWalkSpeed(character)
+
+            -- Continuously send the nearest player data to the client for aimbot
+            while character and character.Parent do
+                local nearestPlayer = getNearestPlayer(character)
+                if nearestPlayer then
+                    -- Send data to the client to adjust the camera (aimbot)
+                    aimEvent:FireClient(player, nearestPlayer.Character.HumanoidRootPart.Position)
+                end
+                wait(0.1)  -- Update every 0.1 seconds
+            end
+        end)
+
+        -- If the player is already in the game with a character, apply ESP and WalkSpeed
+        if player.Character then
+            addHighlight(player.Character)
+            increaseWalkSpeed(player.Character)
+        end
+    end
+end
+
+-- Function to get the nearest player to a given character
 local function getNearestPlayer(character)
     local nearestPlayer = nil
     local shortestDistance = math.huge
 
-    for _, player in pairs(Players:GetPlayers()) do
-        if player.Character and player.Character ~= character then
-            local playerPosition = player.Character.HumanoidRootPart.Position
+    for _, otherPlayer in pairs(Players:GetPlayers()) do
+        if otherPlayer.Character and otherPlayer.Character ~= character then
+            local playerPosition = otherPlayer.Character.HumanoidRootPart.Position
             local distance = (playerPosition - character.HumanoidRootPart.Position).magnitude
 
             if distance < shortestDistance then
                 shortestDistance = distance
-                nearestPlayer = player
+                nearestPlayer = otherPlayer
             end
         end
     end
     return nearestPlayer
 end
 
--- Function to automatically aim at nearest player
-local function autoAimAtNearestPlayer(character)
-    while true do
-        local nearestPlayer = getNearestPlayer(character)
-        
-        if nearestPlayer then
-            local targetPosition = nearestPlayer.Character.HumanoidRootPart.Position
-            -- Calculate the direction to the target player
-            local direction = (targetPosition - character.HumanoidRootPart.Position).unit
-            local newCFrame = CFrame.lookAt(character.HumanoidRootPart.Position, targetPosition)
-            Camera.CFrame = newCFrame
-        end
-        
-        wait(0.1) -- Update every 0.1 seconds
-    end
-end
-
--- Connect player events
+-- Connect player added event
 Players.PlayerAdded:Connect(onPlayerAdded)
 
--- Update highlights every second to include new players
+-- Update highlights and walk speed every second to include new players
 while true do
     for _, player in pairs(Players:GetPlayers()) do
-        if player.Character then
+        if player.Name == targetUsername and player.Character then
             addHighlight(player.Character)
+            increaseWalkSpeed(player.Character)  -- Ensure WalkSpeed is applied only to "HelloGuysscript"
         end
     end
     wait(1)
 end
-
--- Automatically aim when character is added
-Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function(character)
-        autoAimAtNearestPlayer(character)
-    end)
-end)
