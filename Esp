@@ -1,6 +1,5 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
 
 -- Create a RemoteEvent for communication (Server to Client)
 local aimEvent = Instance.new("RemoteEvent")
@@ -28,6 +27,15 @@ local function increaseWalkSpeed(character)
     if humanoid then
         -- Set WalkSpeed to 23 (increased speed)
         humanoid.WalkSpeed = 23
+    end
+end
+
+-- Function to reset walk speed to normal (19)
+local function resetWalkSpeed(character)
+    local humanoid = character:FindFirstChild("Humanoid")
+    if humanoid then
+        -- Set WalkSpeed to 19 (default speed)
+        humanoid.WalkSpeed = 19
     end
 end
 
