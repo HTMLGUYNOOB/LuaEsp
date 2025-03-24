@@ -1,0 +1,39 @@
+local Players = game:GetService("Players")
+
+-- Function to add highlight effect
+local function addHighlight(character)
+    if character and not character:FindFirstChild("Highlight") then
+        local highlight = Instance.new("Highlight")
+        highlight.Parent = character
+        highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Red color
+        highlight.OutlineColor = Color3.fromRGB(255, 255, 255) -- White outline
+        highlight.FillTransparency = 0.5 -- Adjust visibility
+        highlight.OutlineTransparency = 0
+    end
+end
+
+-- Function to handle player joining
+local function onPlayerAdded(player)
+    -- Apply highlight when character loads
+    player.CharacterAdded:Connect(function(character)
+        addHighlight(character)
+    end)
+
+    -- If player already has a character, apply immediately
+    if player.Character then
+        addHighlight(player.Character)
+    end
+end
+
+-- Connect player events
+Players.PlayerAdded:Connect(onPlayerAdded)
+
+-- Update highlights every second to include new players
+while true do
+    for _, player in pairs(Players:GetPlayers()) do
+        if player.Character then
+            addHighlight(player.Character)
+        end
+    end
+    wait(1)
+end
